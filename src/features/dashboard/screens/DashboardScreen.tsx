@@ -1,266 +1,543 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
-import { useAuth } from '../../../context/AuthContext';
-import { useExpenseOverview } from '../hooks/useExpenseOverview';
-import { useHasStatements } from '../hooks/useHasStatements';
-import { useRecentTransactions } from '../hooks/useRecentTransactions';
-import { useBudgetOverview } from '../hooks/useBudgetOverview';
-import { ExpensePieChart } from '../components/ExpensePieChart';
-import { Card } from '../../../components/Card';
-import { Button } from '../../../components/Button';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { View, ScrollView, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import moment, { Moment } from 'moment';
+import { useLayoutEffect } from 'react';
 
-export function DashboardScreen({ navigation }: any) {
-  const { user } = useAuth();
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  
-  // Check if user has uploaded statements
-  const { data: hasStatements, isLoading: loadingStatements } = useHasStatements(user?.id || '');
-  
-  // Get selected month date range
-  const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1).toISOString();
-  const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
-  const { data: overview, isLoading: loadingOverview, error, refetch: refetchOverview } = useExpenseOverview(
-    user?.id || '',
-    startOfMonth,
-    endOfMonth
-  );
+// Types
+import { Transaction, Category } from '../../../lib/types';
 
-  const { data: recentTransactions, refetch: refetchTransactions } = useRecentTransactions(user?.id || '', 2);
-  const { data: budgetOverview, refetch: refetchBudget } = useBudgetOverview(
-    user?.id || '',
-    startOfMonth,
-    endOfMonth
-  );
+// Components
+import { DateNavigator } from '../components/DateNavigator';
+import { FilterMenu } from '../components/FilterMenu';
+import { SummaryOverview } from '../components/SummaryOverview';
+import { ExpenseOverviewChart } from '../components/ExpenseOverviewChart';
+import { SpendingBreakdownList } from '../components/SpendingBreakdownList';
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await Promise.all([
-      refetchOverview(),
-      refetchTransactions(),
-      refetchBudget(),
-    ]);
-    setRefreshing(false);
+// Hooks
+import { useAuth } from '../../../context/AuthContext';  
+
+// Services
+import { supabase } from '../../../lib/supabase';
+
+type RootStackParamList = {
+  Dashboard: undefined;
+  // Add other screens as needed
+};
+
+
+
+// Types
+type FilterPeriod = 'daily' | 'weekly' | 'monthly';  
+
+interface ProcessedData {
+  totalExpense: number;
+  totalIncome: number;
+  balance: number;
+  chartData: Array<{ value: number; color: string; text: string }>;
+  breakdown: Array<{ name: string; amount: number; percentage: number; color: string }>;
+}
+
+const pieColors = ['#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#C77DFF'];
+
+interface CategoryMap {
+  [key: string]: {
+    name: string;
+    amount: number;
+    color: string;
   };
+}
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    const newDate = new Date(selectedDate);
-    if (direction === 'prev') {
-      newDate.setMonth(newDate.getMonth() - 1);
-    } else {
-      newDate.setMonth(newDate.getMonth() + 1);
+interface TransactionWithCategory extends Transaction {
+  category_user: Category | null;
+  category_ai: Category | null;
+}
+
+function processTransactionData(
+  transactions: TransactionWithCategory[]
+): ProcessedData {
+  // Filter out non-expense transactions for the expense breakdown
+  const expenseTransactions = transactions.filter((tx) => tx.type === 'expense');
+  const incomeTransactions = transactions.filter((tx) => tx.type === 'income');
+
+  // Calculate totals
+  const totalExpense = expenseTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  const totalIncome = incomeTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  const balance = totalIncome - totalExpense;
+
+  // Group expenses by category
+  const categoryMap: CategoryMap = {};
+
+  expenseTransactions.forEach((tx) => {
+    // Use user-assigned category if available, otherwise use AI category
+    const category = tx.category_user || tx.category_ai;
+    const categoryName = category?.name || 'Uncategorized';
+    const categoryId = category?.id || 'uncategorized';
+
+    if (!categoryMap[categoryId]) {
+      categoryMap[categoryId] = {
+        name: categoryName,
+        amount: 0,
+        color: pieColors[Object.keys(categoryMap).length % pieColors.length],
+      };
     }
-    setSelectedDate(newDate);
-  };
+    categoryMap[categoryId].amount += Math.abs(tx.amount);
+  });
 
-  const formatMonthYear = (date: Date) => {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  };
+  // Sort categories by amount (descending)
+  const sortedCategories = Object.entries(categoryMap).sort((a, b) => b[1].amount - a[1].amount);
 
-  // Show loading state
-  if (loadingStatements || loadingOverview) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <Text>Loading dashboard...</Text>
-      </View>
-    );
+  // Prepare chart data (top 5 categories)
+  const chartData = sortedCategories
+    .slice(0, 5)
+    .map(([_, category], index) => ({
+      value: category.amount,
+      color: category.color,
+      text: category.name,
+    }));
+
+  // Prepare breakdown data
+  const breakdown = sortedCategories.map(([_, category]) => ({
+    name: category.name,
+    amount: category.amount,
+    percentage: totalExpense > 0 ? Math.round((category.amount / totalExpense) * 100) : 0,
+    color: category.color,
+  }));
+
+  return {
+    totalExpense,
+    totalIncome,
+    balance,
+    chartData,
+    breakdown,
+  };
+}
+
+const fetchTransactions = async (userId: string, startDate: string, endDate: string): Promise<TransactionWithCategory[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(`
+        *,
+        category_user:category_user_id (
+          id,
+          name,
+          icon,
+          type
+        ),
+        category_ai:category_ai_id (
+          id,
+          name,
+          icon,
+          type
+        )
+      `)
+      .eq('user_id', userId)
+      .gte('occurred_at', startDate)
+      .lte('occurred_at', endDate)
+      .order('occurred_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      console.log('No transaction data returned from Supabase');
+      return [];
+    }
+
+    // Type guard to ensure data matches TransactionWithCategory
+    const isValidTransaction = (tx: any): tx is TransactionWithCategory => {
+      return (
+        tx && 
+        typeof tx.id === 'string' &&
+        typeof tx.amount === 'number' &&
+        typeof tx.type === 'string' &&
+        (tx.category_user === null || typeof tx.category_user === 'object') &&
+        (tx.category_ai === null || typeof tx.category_ai === 'object')
+      );
+    };
+
+    return data.filter(isValidTransaction);
+  } catch (error) {
+    console.error('Error in fetchTransactions:', {
+      error,
+      userId,
+      startDate,
+      endDate,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return [];
   }
+};
 
-  // Show empty state for new users without statements
-  if (!hasStatements) {
-    return (
-      <View className="flex-1 bg-gray-100">
-        <View className="flex-1 justify-center items-center p-6">
-          <Text className="text-4xl mb-4">📄</Text>
-          <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
-            Welcome to MyMoney!
-          </Text>
-          <Text className="text-base text-gray-600 mb-8 text-center px-4">
-            Get started by uploading your first bank statement to see your financial overview.
-          </Text>
-          <Button
-            title="Upload Bank Statement"
-            onPress={() => navigation.navigate('UploadStatement')}
+export default function DashboardScreen() {
+  const navigation = useNavigation<any>(); // Using any as a temporary measure
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [transactions, setTransactions] = useState<TransactionWithCategory[]>([]);
+  const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>('monthly');
+  const [currentDate, setCurrentDate] = useState<Moment>(moment().startOf('month'));
+  const [initialLoad, setInitialLoad] = useState(true);
+
+  const handleFilterChange = useCallback((period: FilterPeriod) => {
+    setFilterPeriod(period);
+    // Reset to current period when changing filter type
+    const now = moment();
+    setCurrentDate(period === 'monthly' ? now.startOf('month') : 
+                  period === 'weekly' ? now.startOf('week') : 
+                  now.startOf('day'));
+  }, []);
+
+   useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ marginRight: 16 }}>
+          <FilterMenu
+            selectedPeriod={filterPeriod}
+            onPeriodChange={handleFilterChange}
           />
         </View>
-      </View>
-    );
-  }
+      ),
+    });
+  }, [navigation, filterPeriod, handleFilterChange]); // Add handleFilterChange to dependencies
 
-  // Show error state
-  if (error) {
+  
+
+  // Calculate date range based on filter period
+  const startDate = useMemo(() => {
+    switch (filterPeriod) {
+      case 'daily':
+        return moment(currentDate).startOf('day').format('YYYY-MM-DD HH:mm:ss');
+      case 'weekly':
+        return moment(currentDate).startOf('week').format('YYYY-MM-DD HH:mm:ss');
+      case 'monthly':
+      default:
+        return moment(currentDate).startOf('month').format('YYYY-MM-DD HH:mm:ss');
+    }
+  }, [filterPeriod, currentDate]);
+
+  const endDate = useMemo(() => {
+    switch (filterPeriod) {
+      case 'daily':
+        return moment(currentDate).endOf('day').format('YYYY-MM-DD HH:mm:ss');
+      case 'weekly':
+        return moment(currentDate).endOf('week').format('YYYY-MM-DD HH:mm:ss');
+      case 'monthly':
+      default:
+        return moment(currentDate).endOf('month').format('YYYY-MM-DD HH:mm:ss');
+    }
+  }, [filterPeriod, currentDate]);
+
+  
+
+  // Fetch the earliest transaction date when user changes
+  useEffect(() => {
+    const getEarliestTransactionDate = async () => {
+      if (!user?.id || !initialLoad) return;
+      
+      try {
+        const { data } = await supabase
+          .from('transactions')
+          .select('occurred_at')
+          .eq('user_id', user.id)
+          .order('occurred_at', { ascending: true })
+          .limit(1)
+          .single();
+          
+        if (data?.occurred_at) {
+          setCurrentDate(moment(data.occurred_at).startOf('month'));
+        }
+      } catch (error) {
+        console.error('Error fetching earliest transaction:', error);
+      } finally {
+        setInitialLoad(false);
+      }
+    };
+    
+    getEarliestTransactionDate();
+  }, [user?.id, initialLoad]);
+
+  // Fetch transactions when date range changes or when initial load completes
+  useEffect(() => {
+    const loadTransactions = async () => {
+      if (!user?.id || (initialLoad && transactions.length > 0)) {
+        console.log('Skipping transaction load:', { hasUser: !!user?.id, initialLoad, hasTransactions: transactions.length > 0 });
+        return;
+      }
+
+      console.log(`Fetching transactions from ${startDate} to ${endDate}`);
+      setIsLoading(true);
+      try {
+        const data = await fetchTransactions(user.id, startDate, endDate);
+        console.log('Fetched transactions:', data.length);
+        setTransactions(data);
+      } catch (error) {
+        console.error('Failed to load transactions:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTransactions();
+  }, [user?.id, startDate, endDate]);
+
+  // Process transactions data for the UI
+  const processed = useMemo(() => {
+    console.log('Processing transactions:', transactions.length);
+    if (transactions.length === 0) {
+      return {
+        totalExpense: 0,
+        totalIncome: 0,
+        balance: 0,
+        chartData: [],
+        breakdown: []
+      };
+    }
+    return processTransactionData(transactions);
+  }, [transactions]);
+
+  // const handleFilterChange = (period: FilterPeriod) => {
+  //   setFilterPeriod(period);
+  //   setCurrentDate(
+  //     period === 'monthly' ? moment().startOf('month') : moment().startOf('week')
+  //   );
+  // };
+
+  const handleNavigate = useCallback(
+    (direction: 'prev' | 'next') => {
+      setCurrentDate((prev) => {
+        if (direction === 'prev') {
+          return filterPeriod === 'monthly' 
+            ? moment(prev).subtract(1, 'month').startOf('month')
+            : filterPeriod === 'weekly'
+            ? moment(prev).subtract(1, 'week').startOf('week')
+            : moment(prev).subtract(1, 'day').startOf('day');
+        } else {
+          return filterPeriod === 'monthly'
+            ? moment(prev).add(1, 'month').startOf('month')
+            : filterPeriod === 'weekly'
+            ? moment(prev).add(1, 'week').startOf('week')
+            : moment(prev).add(1, 'day').startOf('day');
+        }
+      });
+    },
+    [filterPeriod]
+  );
+
+  // Get the top 5 categories by amount
+  const topCategories = useMemo(() => {
+    return [...processed.breakdown]
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+  }, [processed.breakdown]);
+
+  // Format period label for display
+  const periodLabel = useMemo(() => {
+    switch (filterPeriod) {
+      case 'daily':
+        return currentDate.format('MMM D, YYYY');
+      case 'weekly':
+        return `${currentDate.startOf('week').format('MMM D')} - ${currentDate.clone().endOf('week').format('MMM D, YYYY')}`;
+      case 'monthly':
+      default:
+        return currentDate.format('MMM YYYY');
+    }
+  }, [filterPeriod, currentDate]);
+
+  if (isLoading) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500 text-base mb-3">Error loading dashboard</Text>
-        <TouchableOpacity onPress={() => refetchOverview()}>
-          <Text className="text-blue-500 text-sm font-semibold">Retry</Text>
-        </TouchableOpacity>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4F46E5" />
+        <Text style={styles.loadingText}>Loading transactions...</Text>
       </View>
     );
   }
 
-  const netAmount = (overview?.total_income || 0) - (overview?.total_expense || 0);
-  const totalAmount = netAmount;
+  // Don't show empty state for the entire screen, just handle empty data in components
+
 
   return (
-    <View className="flex-1 bg-gray-100">
-      <ScrollView
-        className="flex-1"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {/* Header */}
-        <View className="bg-white px-4 py-3 flex-row items-center justify-between border-b border-gray-200">
-          <TouchableOpacity>
-            <Text className="text-2xl">☰</Text>
-          </TouchableOpacity>
-          <Text className="text-xl font-bold" style={{ fontFamily: 'serif' }}>
-            MyMoney
-          </Text>
-          <TouchableOpacity>
-            <Text className="text-xl">🔍</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View className="p-4">
-          {/* Monthly Financial Summary */}
-          <View className="mb-6">
-            <View className="flex-row items-center justify-between mb-4">
-              <TouchableOpacity onPress={() => navigateMonth('prev')}>
-                <Text className="text-2xl text-gray-600">‹</Text>
-              </TouchableOpacity>
-              <Text className="text-lg font-semibold text-gray-800">
-                {formatMonthYear(selectedDate)}
-              </Text>
-              <View className="flex-row items-center gap-3">
-                <TouchableOpacity onPress={() => navigateMonth('next')}>
-                  <Text className="text-2xl text-gray-600">›</Text>
-                </TouchableOpacity>
-                <TouchableOpacity>
-                  <Text className="text-lg">⚙️</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Three Column Summary */}
-            <View className="flex-row gap-3">
-              <Card className="flex-1 p-4">
-                <Text className="text-xs text-gray-600 mb-1">EXPENSE</Text>
-                <Text className="text-xl font-bold text-red-500">
-                  ₹{overview?.total_expense.toLocaleString() || '0'}
-                </Text>
-              </Card>
-
-              <Card className="flex-1 p-4">
-                <Text className="text-xs text-gray-600 mb-1">INCOME</Text>
-                <Text className="text-xl font-bold text-green-500">
-                  ₹{overview?.total_income.toLocaleString() || '0'}
-                </Text>
-              </Card>
-
-              <Card className="flex-1 p-4">
-                <Text className="text-xs text-gray-600 mb-1">TOTAL</Text>
-                <Text className="text-xl font-bold" style={{ color: totalAmount >= 0 ? '#34C759' : '#FF3B30' }}>
-                  ₹{Math.abs(totalAmount).toLocaleString()}
-                </Text>
-              </Card>
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Header with Date Navigation and Filter */}
+        <View style={styles.headerContainer}>
+          <View style={styles.headerContent}>
+            <DateNavigator
+              currentDate={currentDate}
+              onNavigate={handleNavigate}
+              periodLabel={periodLabel}
+            />
+            <View style={styles.filterButtonContainer}>
+              <FilterMenu
+                selectedPeriod={filterPeriod}
+                onPeriodChange={handleFilterChange}
+              />
             </View>
           </View>
+        </View>
 
-          {/* Budget Overview */}
-          <Card className="mb-4">
-            <Text className="text-base font-semibold text-gray-800 mb-3">Budget Overview</Text>
-            <View className="flex-row items-center gap-3">
-              <View className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
-                <View
-                  className="h-full bg-black rounded-full"
-                  style={{ width: `${budgetOverview?.percentageUsed || 0}%` }}
-                />
-              </View>
-              <Text className="text-sm font-medium text-gray-700">
-                {Math.round(budgetOverview?.percentageUsed || 0)}% Used
+        {/* Summary Overview - Always show, even with 0 values */}
+        <View style={styles.summaryContainer}>
+          <SummaryOverview
+            totalExpense={processed.totalExpense}
+            totalIncome={processed.totalIncome}
+            balance={processed.balance}
+          />
+        </View>
+
+        {/* Expense Overview Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Expense Overview</Text>
+          {processed.chartData.length > 0 ? (
+            <ExpenseOverviewChart
+              chartData={processed.chartData}
+              totalExpense={processed.totalExpense}
+              breakdown={topCategories}
+            />
+          ) : (
+            <View style={[styles.emptyState, styles.chartPlaceholder]}>
+              <View style={styles.placeholderCircle} />
+              <Text style={[styles.emptyStateText, { marginTop: 16 }]}>
+                No transactions recorded
+              </Text>
+              <Text style={styles.emptyStateSubtext}>
+                {filterPeriod === 'daily' 
+                  ? 'No expenses for this day' 
+                  : filterPeriod === 'weekly'
+                  ? 'No expenses for this week'
+                  : 'No expenses for this month'}
               </Text>
             </View>
-          </Card>
-
-          {/* Spending Breakdown */}
-          {overview && overview.categories.length > 0 && (
-            <Card className="mb-4">
-              <Text className="text-base font-semibold text-gray-800 mb-3">
-                Spending Breakdown (Pie chart)
-              </Text>
-              <ExpensePieChart
-                categories={overview.categories}
-                totalExpense={overview.total_expense}
-                showTitle={false}
-              />
-            </Card>
           )}
+        </View>
 
-          {/* Recent Transactions */}
-          <Card>
-            <Text className="text-base font-semibold text-gray-800 mb-3">Recent Transactions</Text>
-            {recentTransactions && recentTransactions.length > 0 ? (
-              <View className="gap-3">
-                {recentTransactions.map((transaction) => {
-                  const category = transaction.category || { name: 'Uncategorized', icon: '📦' };
-                  const amount = Number(transaction.amount);
-                  const isExpense = transaction.type === 'expense';
-                  const merchant = transaction.merchant || transaction.raw_description || 'Transaction';
-
-                  return (
-                    <View key={transaction.id} className="flex-row items-center justify-between py-2 border-b border-gray-100">
-                      <View className="flex-row items-center flex-1">
-                        <Text className="text-lg mr-2">{category.icon || '📦'}</Text>
-                        <View className="flex-1">
-                          <Text className="text-sm font-medium text-gray-800">{merchant}</Text>
-                          <Text className="text-xs text-gray-500">{category.name}</Text>
-                        </View>
-                      </View>
-                      <Text
-                        className="text-sm font-semibold"
-                        style={{ color: isExpense ? '#FF3B30' : '#34C759' }}
-                      >
-                        {isExpense ? '-' : '+'}₹{Math.abs(amount).toLocaleString()}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-            ) : (
-              <Text className="text-sm text-gray-500">No recent transactions</Text>
-            )}
-          </Card>
+        {/* Spending Breakdown Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Spending Breakdown</Text>
+          {topCategories.length > 0 ? (
+            <SpendingBreakdownList items={topCategories} />
+          ) : (
+            <View style={[styles.emptyState, styles.breakdownPlaceholder]}>
+              <Text style={styles.emptyStateText}>
+                {transactions.length > 0 
+                  ? 'No categorized expenses' 
+                  : 'No spending recorded'}
+              </Text>
+              {transactions.length > 0 && (
+                <Text style={styles.emptyStateSubtext}>
+                  Add categories to your transactions to see the breakdown
+                </Text>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
-
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('UploadStatement')}
-        activeOpacity={0.8}
-      >
-        <Text className="text-white text-3xl font-light">+</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  fab: {
-    position: 'absolute',
-    bottom: 20,
-    alignSelf: 'center',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007AFF',
+  headerContainer: {
+    backgroundColor: '#f8fafc',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  headerContent: {
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+    width: '100%',
+  },
+  filterButtonContainer: {
+    position: 'absolute',
+    right: 16,
+  },
+  sectionContainer: {
+    marginTop: 24,
+    paddingHorizontal: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  summaryContainer: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    marginTop: 8,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5dc',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5dc',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#4b5563',
+  },
+  emptyState: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 32,
+    marginVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  chartPlaceholder: {
+    padding: 40,
+  },
+  breakdownPlaceholder: {
+    padding: 32,
+  },
+  placeholderCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f3f4f6',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    fontWeight: '500',
   },
 });

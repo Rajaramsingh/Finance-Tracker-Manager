@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { LoginScreen } from '../features/auth/screens/LoginScreen';
 import { SignUpScreen } from '../features/auth/screens/SignUpScreen';
-import { DashboardScreen } from '../features/dashboard/screens/DashboardScreen';
+import DashboardScreen from '../features/dashboard/screens/DashboardScreen';
 import { TransactionsListScreen } from '../features/transactions/screens/TransactionsListScreen';
 import { TransactionsTableScreen } from '../features/transactions/screens/TransactionsTableScreen';
 import { UploadStatementScreen } from '../features/statements/screens/UploadStatementScreen';

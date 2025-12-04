@@ -10,7 +10,13 @@ export function useRecentTransactions(userId: string, limit: number = 5) {
         .from('transactions')
         .select(`
           *,
-          categories:category_user_id (
+          category_user:category_user_id (
+            id,
+            name,
+            icon,
+            type
+          ),
+          category_ai:category_ai_id (
             id,
             name,
             icon,

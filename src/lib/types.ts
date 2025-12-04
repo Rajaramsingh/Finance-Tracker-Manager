@@ -60,6 +60,8 @@ export interface Transaction {
 
 export interface TransactionWithCategory extends Transaction {
   category?: Category;
+  category_user?: Category;
+  category_ai?: Category;
 }
 
 export interface StatementImport {
