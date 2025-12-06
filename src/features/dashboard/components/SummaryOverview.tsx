@@ -1,31 +1,55 @@
 import React from 'react';
-import { View, Text, StyleSheet, TextStyle, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, TextStyle, ViewStyle, TouchableOpacity } from 'react-native';
 
 interface SummaryOverviewProps {
   totalExpense: number;
   totalIncome: number;
   balance: number;
+  onExpensePress?: () => void;
+  onIncomePress?: () => void;
+  activeView?: 'expense' | 'income';
 }
 
-export function SummaryOverview({ totalExpense, totalIncome, balance }: SummaryOverviewProps) {
+export function SummaryOverview({
+  totalExpense,
+  totalIncome,
+  balance,
+  onExpensePress,
+  onIncomePress,
+  activeView = 'expense'
+}: SummaryOverviewProps) {
+  const displayExpense = Math.abs(totalExpense);
+  const displayIncome = Math.abs(totalIncome);
+  const displayBalance = Math.abs(balance);
+
   return (
     <View style={styles.container}>
-      <View style={styles.column}>
-        <Text style={styles.label}>Expense</Text>
+      <TouchableOpacity
+        style={[styles.column, activeView === 'expense' && styles.activeColumn]}
+        onPress={onExpensePress}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.label, activeView === 'expense' && styles.activeLabel]}>Expense</Text>
         <Text style={[styles.amount, styles.expense]}>
-          ₹{Math.abs(totalExpense).toLocaleString('en-IN')}
+          ₹{displayExpense.toLocaleString('en-IN')}
         </Text>
-      </View>
-      <View style={styles.column}>
-        <Text style={styles.label}>Income</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.column, activeView === 'income' && styles.activeColumn]}
+        onPress={onIncomePress}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.label, activeView === 'income' && styles.activeLabel]}>Income</Text>
         <Text style={[styles.amount, styles.income]}>
-          ₹{Math.abs(totalIncome).toLocaleString('en-IN')}
+          ₹{displayIncome.toLocaleString('en-IN')}
         </Text>
-      </View>
+      </TouchableOpacity>
+
       <View style={styles.column}>
         <Text style={styles.label}>Total</Text>
         <Text style={[styles.amount, balance < 0 ? styles.expense : styles.income]}>
-          ₹{Math.abs(balance).toLocaleString('en-IN')}
+          ₹{displayBalance.toLocaleString('en-IN')}
         </Text>
       </View>
     </View>

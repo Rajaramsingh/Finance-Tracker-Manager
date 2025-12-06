@@ -203,6 +203,7 @@ export default function DashboardScreen() {
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>('monthly');
   const [currentDate, setCurrentDate] = useState<Moment>(moment().startOf('month'));
   const [initialLoad, setInitialLoad] = useState(true);
+  const [viewMode, setViewMode] = useState<'expense' | 'income'>('expense');
 
   const handleFilterChange = useCallback((period: FilterPeriod) => {
     setFilterPeriod(period);
@@ -315,6 +316,57 @@ export default function DashboardScreen() {
     return processTransactionData(transactions);
   }, [transactions]);
 
+  const processedIncome = useMemo(() => {
+    // Filter income transactions
+    const incomeTransactions = transactions.filter((tx) => tx.type === 'income');
+
+    // Group income by category
+    const categoryMap: CategoryMap = {};
+    const totalIncome = incomeTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+    incomeTransactions.forEach((tx) => {
+      const category = tx.category_user || tx.category_ai;
+      const categoryName = category?.name || 'Uncategorized';
+      const categoryId = category?.id || 'uncategorized';
+
+      if (!categoryMap[categoryId]) {
+        categoryMap[categoryId] = {
+          name: categoryName,
+          amount: 0,
+        };
+      }
+      categoryMap[categoryId].amount += Math.abs(tx.amount);
+    });
+
+    const sortedCategories = Object.entries(categoryMap)
+      .sort((a, b) => b[1].amount - a[1].amount)
+      .map(([id, data], index) => ({
+        ...data,
+        color: pieColors[index % pieColors.length]
+      }));
+
+    const chartData = sortedCategories
+      .slice(0, 5)
+      .map((category) => ({
+        value: category.amount,
+        color: category.color,
+        text: category.name,
+      }));
+
+    const breakdown = sortedCategories.map((category) => ({
+      name: category.name,
+      amount: category.amount,
+      percentage: totalIncome > 0 ? Math.round((category.amount / totalIncome) * 100) : 0,
+      color: category.color,
+    }));
+
+    return {
+      chartData,
+      breakdown,
+      totalIncome
+    };
+  }, [transactions]);
+
   // const handleFilterChange = (period: FilterPeriod) => {
   //   setFilterPeriod(period);
   //   setCurrentDate(
@@ -401,30 +453,43 @@ export default function DashboardScreen() {
             totalExpense={processed.totalExpense}
             totalIncome={processed.totalIncome}
             balance={processed.balance}
+            onExpensePress={() => setViewMode('expense')}
+            onIncomePress={() => setViewMode('income')}
+            activeView={viewMode}
           />
         </View>
 
-        {/* Expense Overview Section */}
+        {/* Overview Section */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Expense Overview</Text>
-          {processed.chartData.length > 0 ? (
+          <Text style={styles.sectionTitle}>
+            {viewMode === 'expense' ? 'Expense Overview' : 'Income Overview'}
+          </Text>
+
+          {(viewMode === 'expense' ? processed.chartData : processedIncome.chartData).length > 0 ? (
             <ExpenseOverviewChart
-              chartData={processed.chartData}
-              totalExpense={processed.totalExpense}
-              breakdown={topCategories}
+              chartData={viewMode === 'expense' ? processed.chartData : processedIncome.chartData}
+              totalExpense={viewMode === 'expense' ? processed.totalExpense : processedIncome.totalIncome}
+              breakdown={viewMode === 'expense' ? topCategories : processedIncome.breakdown}
             />
           ) : (
             <View style={[styles.emptyState, styles.chartPlaceholder]}>
               <View style={styles.placeholderCircle} />
               <Text style={[styles.emptyStateText, { marginTop: 16 }]}>
-                No transactions recorded
+                {viewMode === 'expense' ? 'No transactions recorded' : 'No income recorded'}
               </Text>
               <Text style={styles.emptyStateSubtext}>
-                {filterPeriod === 'daily'
-                  ? 'No expenses for this day'
-                  : filterPeriod === 'weekly'
-                    ? 'No expenses for this week'
-                    : 'No expenses for this month'}
+                {viewMode === 'expense'
+                  ? (filterPeriod === 'daily'
+                    ? 'No expenses for this day'
+                    : filterPeriod === 'weekly'
+                      ? 'No expenses for this week'
+                      : 'No expenses for this month')
+                  : (filterPeriod === 'daily'
+                    ? 'No income for this day'
+                    : filterPeriod === 'weekly'
+                      ? 'No income for this week'
+                      : 'No income for this month')
+                }
               </Text>
             </View>
           )}
