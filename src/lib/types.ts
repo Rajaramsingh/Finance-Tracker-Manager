@@ -76,17 +76,6 @@ export interface StatementImport {
   created_at: string;
 }
 
-export interface CategorizerFeedback {
-  id: string;
-  transaction_id: string;
-  old_category: string | null;
-  new_category: string;
-  reason: string | null;
-  user_id: string;
-  source: 'user_override' | 'analyst_review';
-  created_at: string;
-}
-
 export interface BudgetPeriod {
   id: string;
   user_id: string;
@@ -102,15 +91,6 @@ export interface BudgetCategory {
   category_id: string;
   planned_amount: number;
   created_at: string;
-}
-
-export interface InsightsCache {
-  id: string;
-  user_id: string;
-  period_start: string | null;
-  period_end: string | null;
-  insights: Record<string, any>;
-  generated_at: string;
 }
 
 // Chart/Display Types

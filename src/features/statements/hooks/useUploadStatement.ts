@@ -36,7 +36,6 @@ export function useUploadStatement() {
     file_url: string;
     source_type: string;
     client_id: string;
-    accountant_id: string;
     file_id: string;
     signed_url: string;
   }) => {
@@ -46,7 +45,7 @@ export function useUploadStatement() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          
+
         },
         body: JSON.stringify(payload),
       });
@@ -65,7 +64,7 @@ export function useUploadStatement() {
       return result;
     } catch (error: any) {
       // Re-throw to handle in caller
-      console.error('Backend notification error:', error); 
+      console.error('Backend notification error:', error);
       throw error;
     }
   };
@@ -121,7 +120,7 @@ export function useUploadStatement() {
       // Try to generate signed URL (preferred, but not required)
       // Similar to Next.js approach: always have a valid URL to send
       let signedUrl = publicUrl; // Default to public URL (works for public buckets)
-      
+
       try {
         // Wait a bit more and retry signed URL creation
         const { data: signedData, error: signedError } = await supabase.storage
@@ -162,7 +161,6 @@ export function useUploadStatement() {
         file_url: publicUrl,
         source_type: 'bank_statement',
         client_id: userId,
-        accountant_id: userId,
         file_id: storagePath,
         signed_url: signedUrl,
       }).catch((error) => {
@@ -175,7 +173,6 @@ export function useUploadStatement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['statement_imports'] });
-      queryClient.invalidateQueries({ queryKey: ['hasStatements'] });
     },
   });
 }

@@ -278,19 +278,6 @@ const ManualTransactionScreen = () => {
 
       if (error) throw error;
 
-
-      // Create transaction category history
-      const { error: historyError } = await supabase
-        .from('transaction_categories')
-        .insert({
-          transaction_id: transaction.id,
-          category_id: selectedCategory.id,
-          assigned_by: 'user_override',
-          user_id: user.id,
-        });
-
-      if (historyError) throw historyError;
-
       console.log('Transaction saved:', transaction);
       navigation.goBack();
     } catch (error) {
