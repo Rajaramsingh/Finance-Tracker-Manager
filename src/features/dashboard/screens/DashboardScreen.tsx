@@ -125,7 +125,7 @@ function processTransactionData(
   // Prepare breakdown data
   const breakdown = sortedCategories.map((category) => ({
     name: category.name,
-    amount: category.amount,
+    amount: -category.amount, // Negate to show as expense
     percentage: totalExpense > 0 ? Math.round((category.amount / totalExpense) * 100) : 0,
     color: category.color,
     icon: category.icon,
@@ -448,7 +448,7 @@ export default function DashboardScreen() {
   // Get the categories by amount
   const topCategories = useMemo(() => {
     return [...processed.breakdown]
-      .sort((a, b) => b.amount - a.amount)
+      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
   }, [processed.breakdown]);
 
   // Format period label for display
@@ -485,38 +485,40 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Header with Date Navigation and Filter */}
-        <View style={styles.headerContainer}>
-          <View style={styles.headerContent}>
-            <DateNavigator
-              currentDate={currentDate}
-              onNavigate={handleNavigate}
-              periodLabel={periodLabel}
-              textColor="#ffffff"
+      {/* Header with Date Navigation and Filter */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerContent}>
+          <DateNavigator
+            currentDate={currentDate}
+            onNavigate={handleNavigate}
+            periodLabel={periodLabel}
+            textColor="#ffffff"
+            iconColor="#ffffff"
+          />
+          <View style={styles.filterButtonContainer}>
+            <FilterMenu
+              selectedPeriod={filterPeriod}
+              onPeriodChange={handleFilterChange}
               iconColor="#ffffff"
             />
-            <View style={styles.filterButtonContainer}>
-              <FilterMenu
-                selectedPeriod={filterPeriod}
-                onPeriodChange={handleFilterChange}
-                iconColor="#ffffff"
-              />
-            </View>
           </View>
         </View>
+      </View>
 
-        {/* Summary Overview - Always show, even with 0 values */}
-        <View style={styles.summaryContainer}>
-          <SummaryOverview
-            totalExpense={processed.totalExpense}
-            totalIncome={processed.totalIncome}
-            balance={processed.balance}
-            onExpensePress={() => setViewMode('expense')}
-            onIncomePress={() => setViewMode('income')}
-            activeView={viewMode}
-          />
-        </View>
+      {/* Summary Overview - Always show, even with 0 values */}
+      <View style={styles.summaryContainer}>
+        <SummaryOverview
+          totalExpense={processed.totalExpense}
+          totalIncome={processed.totalIncome}
+          balance={processed.balance}
+          onExpensePress={() => setViewMode('expense')}
+          onIncomePress={() => setViewMode('income')}
+          activeView={viewMode}
+        />
+      </View>
+
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+
 
         {/* Overview Section */}
         <View style={styles.sectionContainer}>
@@ -575,7 +577,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   headerContainer: {
-    backgroundColor: '#004d00',
+    backgroundColor: '#007a33',
     paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -593,18 +595,18 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     marginTop: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 12,
+    marginBottom: 1,
     marginLeft: 4,
   },
   summaryContainer: {
     marginTop: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 1,
   },
   emptyStateContainer: {
     flex: 1,

@@ -23,11 +23,11 @@ const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#004d00', // wealthy-green-900
+    backgroundColor: '#007a33', // wealthy-green-900
   },
   container: {
     flex: 1,
-    backgroundColor: '#004d00', // wealthy-green-900
+    backgroundColor: '#007a33', // wealthy-green-900
   },
   scrollContent: {
     flexGrow: 1,
@@ -297,7 +297,7 @@ export function SignUpScreen({ navigation }: any) {
         </TouchableOpacity>
 
         <ScrollView
-          style={{ backgroundColor: '#004d00' }}
+          style={{ backgroundColor: '#007a33' }}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
