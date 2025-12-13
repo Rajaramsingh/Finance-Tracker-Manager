@@ -114,7 +114,6 @@ function processTransactionData(
 
   // Prepare chart data (top 5 categories)
   const chartData = sortedCategories
-    .slice(0, 5)
     .map((category) => ({
       value: category.amount,
       color: category.color,
@@ -382,7 +381,6 @@ export default function DashboardScreen() {
       }));
 
     const chartData = sortedCategories
-      .slice(0, 5)
       .map((category) => ({
         value: category.amount,
         color: category.color,
@@ -442,11 +440,10 @@ export default function DashboardScreen() {
     [filterPeriod, currentDate, updateFilter]
   );
 
-  // Get the top 5 categories by amount
+  // Get the categories by amount
   const topCategories = useMemo(() => {
     return [...processed.breakdown]
       .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
   }, [processed.breakdown]);
 
   // Format period label for display
