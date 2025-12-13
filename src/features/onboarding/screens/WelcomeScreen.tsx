@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAuth } from '../../../context/AuthContext';
 
 export function WelcomeScreen({ navigation }: { navigation: any }) {
@@ -57,73 +57,85 @@ export function WelcomeScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.scrollContent}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome!</Text>
-          <Text style={styles.subtitle}>
-            Tell us a bit about you to finish setting up your account.
-          </Text>
-        </View>
+    <View style={styles.containerWrapper}>
+      <KeyboardAvoidingView
+        style={styles.containerWrapper}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          style={{ backgroundColor: '#0f2d25' }}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.container}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Welcome!</Text>
+              <Text style={styles.subtitle}>
+                Tell us a bit about you to finish setting up your account.
+              </Text>
+            </View>
 
-        <View style={styles.card}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>First name</Text>
-            <TextInput
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="Enter your first name"
-              style={[styles.input, errors.firstName && styles.inputError]}
-              autoCapitalize="words"
-              placeholderTextColor="#9CA3AF"
-            />
-            {errors.firstName ? <Text style={styles.errorText}>{errors.firstName}</Text> : null}
+            <View style={styles.card}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>First name</Text>
+                <TextInput
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Enter your first name"
+                  style={[styles.input, errors.firstName && styles.inputError]}
+                  autoCapitalize="words"
+                  placeholderTextColor="#9CA3AF"
+                />
+                {errors.firstName ? <Text style={styles.errorText}>{errors.firstName}</Text> : null}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Last name</Text>
+                <TextInput
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Enter your last name"
+                  style={[styles.input, errors.lastName && styles.inputError]}
+                  autoCapitalize="words"
+                  placeholderTextColor="#9CA3AF"
+                />
+                {errors.lastName ? <Text style={styles.errorText}>{errors.lastName}</Text> : null}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Contact number</Text>
+                <TextInput
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  placeholder="Enter your phone number"
+                  style={[styles.input, errors.phoneNumber && styles.inputError]}
+                  keyboardType="phone-pad"
+                  placeholderTextColor="#9CA3AF"
+                />
+                {errors.phoneNumber ? <Text style={styles.errorText}>{errors.phoneNumber}</Text> : null}
+              </View>
+
+              <TouchableOpacity
+                style={[styles.button, submitting && styles.buttonDisabled]}
+                onPress={onContinue}
+                disabled={submitting}
+              >
+                <Text style={styles.buttonText}>{submitting ? 'Saving...' : 'Continue'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Last name</Text>
-            <TextInput
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Enter your last name"
-              style={[styles.input, errors.lastName && styles.inputError]}
-              autoCapitalize="words"
-              placeholderTextColor="#9CA3AF"
-            />
-            {errors.lastName ? <Text style={styles.errorText}>{errors.lastName}</Text> : null}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Contact number</Text>
-            <TextInput
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              placeholder="Enter your phone number"
-              style={[styles.input, errors.phoneNumber && styles.inputError]}
-              keyboardType="phone-pad"
-              placeholderTextColor="#9CA3AF"
-            />
-            {errors.phoneNumber ? <Text style={styles.errorText}>{errors.phoneNumber}</Text> : null}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.button, submitting && styles.buttonDisabled]}
-            onPress={onContinue}
-            disabled={submitting}
-          >
-            <Text style={styles.buttonText}>{submitting ? 'Saving...' : 'Continue'}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  containerWrapper: {
+    flex: 1,
+    backgroundColor: '#0f2d25',
+  },
   scrollContent: {
     flexGrow: 1,
     backgroundColor: '#0f2d25',
@@ -191,7 +203,7 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 10,
-   backgroundColor: '#f7f7fb',
+    backgroundColor: '#0f2d25', // Dark green to match theme and provide contrast
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',

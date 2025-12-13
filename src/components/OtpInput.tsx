@@ -14,7 +14,7 @@ export function OtpInput({ length = 6, onComplete, error }: OtpInputProps) {
   const handleChange = (text: string, index: number) => {
     // Only allow digits
     const digit = text.replace(/[^0-9]/g, '');
-    
+
     if (digit.length > 1) {
       // Handle paste
       const digits = digit.slice(0, length).split('');
@@ -25,11 +25,11 @@ export function OtpInput({ length = 6, onComplete, error }: OtpInputProps) {
         }
       });
       setOtp(newOtp);
-      
+
       // Focus last filled input
       const lastIndex = Math.min(index + digits.length - 1, length - 1);
       inputRefs.current[lastIndex]?.focus();
-      
+
       // Check if complete
       if (newOtp.every((d) => d !== '')) {
         onComplete(newOtp.join(''));
@@ -77,7 +77,7 @@ export function OtpInput({ length = 6, onComplete, error }: OtpInputProps) {
             onChangeText={(text) => handleChange(text, index)}
             onKeyPress={(e) => handleKeyPress(e, index)}
             keyboardType="number-pad"
-            maxLength={1}
+            maxLength={length}
             selectTextOnFocus
             autoFocus={index === 0}
           />
