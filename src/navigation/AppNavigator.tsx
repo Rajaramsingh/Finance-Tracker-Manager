@@ -35,7 +35,7 @@ function HomeStackNavigator() {
   return (
     <HomeStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#007AFF' },
+        headerStyle: { backgroundColor: '#004d00' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '600' },
       }}
@@ -58,7 +58,7 @@ function TransactionsStackNavigator() {
   return (
     <TransactionsStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#007AFF' },
+        headerStyle: { backgroundColor: '#004d00' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '600' },
       }}
@@ -79,6 +79,11 @@ function TransactionsStackNavigator() {
         options={({ route }: { route: RouteProp<RootStackParamList, 'ManualTransaction'> }) => ({
           title: route.params?.transaction ? 'Edit Transaction' : 'Add Transaction',
         })}
+      />
+      <TransactionsStack.Screen
+        name="UploadStatement"
+        component={UploadStatementScreen}
+        options={{ title: 'Upload Statement' }}
       />
     </TransactionsStack.Navigator>
   );
@@ -146,9 +151,17 @@ export function AppNavigator() {
 
   // Use a key that changes based on auth state to force React Navigation to reset
   // This prevents navigation errors when switching between auth and main navigators
-  const navigationKey = user 
-    ? (needsProfileCompletion ? 'onboarding' : 'main') 
+  const navigationKey = user
+    ? (needsProfileCompletion ? 'onboarding' : 'main')
     : 'auth';
+
+  console.log('AppNavigator State:', {
+    hasUser: !!user,
+    userId: user?.id,
+    loading,
+    needsProfileCompletion,
+    navigationKey
+  });
 
   return (
     <NavigationContainer key={navigationKey}>

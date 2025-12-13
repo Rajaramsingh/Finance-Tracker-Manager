@@ -38,7 +38,7 @@ interface ProcessedData {
   totalIncome: number;
   balance: number;
   chartData: Array<{ value: number; color: string; text: string }>;
-  breakdown: Array<{ name: string; amount: number; percentage: number; color: string }>;
+  breakdown: Array<{ name: string; amount: number; percentage: number; color: string; icon?: string }>;
 }
 
 const pieColors = [
@@ -63,7 +63,7 @@ interface CategoryMap {
   [key: string]: {
     name: string;
     amount: number;
-
+    icon?: string;
   };
 }
 
@@ -92,11 +92,13 @@ function processTransactionData(
     const category = tx.category_user || tx.category_ai;
     const categoryName = category?.name || 'Uncategorized';
     const categoryId = category?.id || 'uncategorized';
+    const categoryIcon = category?.icon || '📦';
 
     if (!categoryMap[categoryId]) {
       categoryMap[categoryId] = {
         name: categoryName,
         amount: 0,
+        icon: categoryIcon,
         // color will be assigned later based on rank
       };
     }
@@ -126,6 +128,7 @@ function processTransactionData(
     amount: category.amount,
     percentage: totalExpense > 0 ? Math.round((category.amount / totalExpense) * 100) : 0,
     color: category.color,
+    icon: category.icon,
   }));
 
   return {
@@ -210,7 +213,7 @@ export default function DashboardScreen() {
           period === 'yearly' ? now.startOf('year') :
             period === 'half-yearly' ? (now.month() < 6 ? now.startOf('year') : now.startOf('year').add(6, 'months')) :
               now.startOf('day');
-    
+
     // Update the shared filter context
     updateFilter(period, newDate);
   }, [updateFilter]);
@@ -221,7 +224,7 @@ export default function DashboardScreen() {
     // Add logout button to header
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={async () => {
             try {
               await signOut();
@@ -318,7 +321,6 @@ export default function DashboardScreen() {
       const loadTransactions = async () => {
         if (!user?.id) return;
 
-        console.log(`Fetching transactions from ${startDate} to ${endDate}`);
         setIsLoading(true);
         try {
           const data = await fetchTransactions(user.id, startDate, endDate);
@@ -363,11 +365,13 @@ export default function DashboardScreen() {
       const category = tx.category_user || tx.category_ai;
       const categoryName = category?.name || 'Uncategorized';
       const categoryId = category?.id || 'uncategorized';
+      const categoryIcon = category?.icon || '📦';
 
       if (!categoryMap[categoryId]) {
         categoryMap[categoryId] = {
           name: categoryName,
           amount: 0,
+          icon: categoryIcon,
         };
       }
       categoryMap[categoryId].amount += Math.abs(tx.amount);
@@ -392,6 +396,7 @@ export default function DashboardScreen() {
       amount: category.amount,
       percentage: totalIncome > 0 ? Math.round((category.amount / totalIncome) * 100) : 0,
       color: category.color,
+      icon: category.icon,
     }));
 
     return {
@@ -410,30 +415,30 @@ export default function DashboardScreen() {
 
   const handleNavigate = useCallback(
     (direction: 'prev' | 'next') => {
-      const newDate = direction === 'prev' 
+      const newDate = direction === 'prev'
         ? (filterPeriod === 'monthly'
-            ? moment(currentDate).subtract(1, 'month').startOf('month')
-            : filterPeriod === 'weekly'
-              ? moment(currentDate).subtract(1, 'week').startOf('week')
-              : filterPeriod === 'quarterly'
-                ? moment(currentDate).subtract(1, 'quarter').startOf('quarter')
-                : filterPeriod === 'yearly'
-                  ? moment(currentDate).subtract(1, 'year').startOf('year')
-                  : filterPeriod === 'half-yearly'
-                    ? moment(currentDate).subtract(6, 'months')
-                    : moment(currentDate).subtract(1, 'day').startOf('day'))
+          ? moment(currentDate).subtract(1, 'month').startOf('month')
+          : filterPeriod === 'weekly'
+            ? moment(currentDate).subtract(1, 'week').startOf('week')
+            : filterPeriod === 'quarterly'
+              ? moment(currentDate).subtract(1, 'quarter').startOf('quarter')
+              : filterPeriod === 'yearly'
+                ? moment(currentDate).subtract(1, 'year').startOf('year')
+                : filterPeriod === 'half-yearly'
+                  ? moment(currentDate).subtract(6, 'months')
+                  : moment(currentDate).subtract(1, 'day').startOf('day'))
         : (filterPeriod === 'monthly'
-            ? moment(currentDate).add(1, 'month').startOf('month')
-            : filterPeriod === 'weekly'
-              ? moment(currentDate).add(1, 'week').startOf('week')
-              : filterPeriod === 'quarterly'
-                ? moment(currentDate).add(1, 'quarter').startOf('quarter')
-                : filterPeriod === 'yearly'
-                  ? moment(currentDate).add(1, 'year').startOf('year')
-                  : filterPeriod === 'half-yearly'
-                    ? moment(currentDate).add(6, 'months')
-                    : moment(currentDate).add(1, 'day').startOf('day'));
-      
+          ? moment(currentDate).add(1, 'month').startOf('month')
+          : filterPeriod === 'weekly'
+            ? moment(currentDate).add(1, 'week').startOf('week')
+            : filterPeriod === 'quarterly'
+              ? moment(currentDate).add(1, 'quarter').startOf('quarter')
+              : filterPeriod === 'yearly'
+                ? moment(currentDate).add(1, 'year').startOf('year')
+                : filterPeriod === 'half-yearly'
+                  ? moment(currentDate).add(6, 'months')
+                  : moment(currentDate).add(1, 'day').startOf('day'));
+
       // Update the shared filter context
       updateFilter(filterPeriod, newDate);
     },
@@ -488,11 +493,14 @@ export default function DashboardScreen() {
               currentDate={currentDate}
               onNavigate={handleNavigate}
               periodLabel={periodLabel}
+              textColor="#ffffff"
+              iconColor="#ffffff"
             />
             <View style={styles.filterButtonContainer}>
               <FilterMenu
                 selectedPeriod={filterPeriod}
                 onPeriodChange={handleFilterChange}
+                iconColor="#ffffff"
               />
             </View>
           </View>
@@ -567,7 +575,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   headerContainer: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#004d00',
     paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -584,7 +592,7 @@ const styles = StyleSheet.create({
     right: 16,
   },
   sectionContainer: {
-    marginTop: 24,
+    marginTop: 1,
     paddingHorizontal: 16,
   },
   sectionTitle: {
@@ -595,7 +603,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   summaryContainer: {
-    marginTop: 16,
+    marginTop: 1,
     paddingHorizontal: 16,
   },
   emptyStateContainer: {
@@ -613,7 +621,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f4f1e3',
     position: 'relative',
   },
   scrollView: {

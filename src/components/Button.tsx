@@ -45,7 +45,7 @@ export function Button({
   // Fallback styles if NativeWind doesn't work
   const buttonStyles: Record<ButtonVariant, ViewStyle> = {
     primary: {
-      backgroundColor: '#3B82F6',
+      backgroundColor: '#007a33', // wealthy-green-800
       paddingVertical: 14,
       paddingHorizontal: 24,
       borderRadius: 8,
@@ -67,7 +67,7 @@ export function Button({
     outline: {
       backgroundColor: 'transparent',
       borderWidth: 1,
-      borderColor: '#3B82F6',
+      borderColor: '#007a33', // wealthy-green-800
       paddingVertical: 14,
       paddingHorizontal: 24,
       borderRadius: 8,
@@ -81,7 +81,7 @@ export function Button({
   const textStyles: Record<ButtonVariant, TextStyle> = {
     primary: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
     secondary: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-    outline: { color: '#3B82F6', fontSize: 16, fontWeight: '600' },
+    outline: { color: '#007a33', fontSize: 16, fontWeight: '600' },
   };
 
   return (

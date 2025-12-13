@@ -18,7 +18,7 @@ import { useAuth } from '../../../context/AuthContext';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f2d25',
+    backgroundColor: '#004d00', // wealthy-green-900
   },
   scrollContent: {
     flexGrow: 1,
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#d1cce8',
+    color: '#b2e0d4', // wealthy-green-300
     marginBottom: 24,
     lineHeight: 22,
   },
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   emailDisplay: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: '#007a33', // wealthy-green-800
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   resendLink: {
-    color: '#3B82F6',
+    color: '#007a33', // wealthy-green-800
     fontWeight: '600',
     fontSize: 14,
     marginLeft: 4,
@@ -229,7 +229,7 @@ export function LoginScreen({ navigation }: any) {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     let timeoutId: NodeJS.Timeout | null = null;
-    
+
     try {
       const { error } = await signInWithGoogle();
       if (error) {
@@ -238,13 +238,13 @@ export function LoginScreen({ navigation }: any) {
         Alert.alert('Error', error.message || 'Google sign in failed');
         return;
       }
-      
+
       // Set a timeout to stop loading if auth doesn't complete within 30 seconds
       timeoutId = setTimeout(() => {
         setLoading(false);
         Alert.alert('Timeout', 'Sign-in is taking longer than expected. Please try again.');
       }, 30000);
-      
+
       // Auth state change will handle setting loading to false and navigation
       // The timeout will be cleared when component unmounts (which happens after successful auth)
     } catch (error: any) {
@@ -255,112 +255,115 @@ export function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <View style={{ flex: 1, backgroundColor: '#004d00' }}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>{step === 'email' ? 'Welcome Back' : 'Check your inbox'}</Text>
-          <Text style={styles.subtitle}>
-            {step === 'email'
-              ? 'Sign in to keep tracking your spending and goals.'
-              : 'Enter the 8-digit code we just sent to your email.'}
-          </Text>
-        </View>
+        <ScrollView
+          style={{ backgroundColor: '#004d00' }}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>{step === 'email' ? 'Welcome Back' : 'Check your inbox'}</Text>
+            <Text style={styles.subtitle}>
+              {step === 'email'
+                ? 'Sign in to keep tracking your spending and goals.'
+                : 'Enter the 8-digit code we just sent to your email.'}
+            </Text>
+          </View>
 
-        <View style={[styles.formContainer, styles.formCard]}>
-          {step === 'email' ? (
-            <>
-              <Input
-                label="Email"
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                style={styles.input}
-                editable={!loading}
-              />
-
-              <Button
-                title={loading ? 'Sending...' : 'Continue'}
-                onPress={handleContinue}
-                disabled={loading}
-                loading={loading}
-              />
-
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <TouchableOpacity
-                style={styles.googleButton}
-                onPress={handleGoogleSignIn}
-                disabled={loading}
-              >
-                <GoogleIcon size={24} />
-                <Text style={styles.googleButtonText}>Continue with Google</Text>
-              </TouchableOpacity>
-
-              <View style={styles.signUpContainer}>
-                <Text style={styles.signUpText}>Don't have an account?</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                  <Text style={styles.signUpLink}>Sign Up</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <>
-              <Text style={styles.emailDisplay}>{email}</Text>
-              <View style={styles.otpContainer}>
-                <Text style={styles.otpTitle}>Enter Verification Code</Text>
-                <Text style={styles.otpSubtitle}>
-                  We sent a 8-digit code to your email
-                </Text>
-                <OtpInput
-                  length={8}
-                  onComplete={handleOtpComplete}
-                  error={otpError}
+          <View style={[styles.formContainer, styles.formCard]}>
+            {step === 'email' ? (
+              <>
+                <Input
+                  label="Email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  style={styles.input}
+                  editable={!loading}
                 />
-              </View>
 
-              <View style={styles.resendContainer}>
-                <Text style={styles.resendText}>Didn't receive the code?</Text>
-                <TouchableOpacity onPress={handleResendCode} disabled={loading}>
-                  <Text style={styles.resendLink}>Resend</Text>
-                </TouchableOpacity>
-              </View>
+                <Button
+                  title={loading ? 'Sending...' : 'Continue'}
+                  onPress={handleContinue}
+                  disabled={loading}
+                  loading={loading}
+                />
 
-              <TouchableOpacity
-                onPress={() => {
-                  setStep('email');
-                  setOtp('');
-                  setOtpError('');
-                }}
-                style={{ marginTop: 16 }}
-              >
-                <Text
-                  style={{
-                    color: '#3B82F6',
-                    fontSize: 14,
-                    fontWeight: '600',
-                    textAlign: 'center',
-                  }}
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>OR</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <TouchableOpacity
+                  style={styles.googleButton}
+                  onPress={handleGoogleSignIn}
+                  disabled={loading}
                 >
-                  Change Email
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+                  <GoogleIcon size={24} />
+                  <Text style={styles.googleButtonText}>Continue with Google</Text>
+                </TouchableOpacity>
+
+                <View style={styles.signUpContainer}>
+                  <Text style={styles.signUpText}>Don't have an account?</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+                    <Text style={styles.signUpLink}>Sign Up</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.emailDisplay}>{email}</Text>
+                <View style={styles.otpContainer}>
+                  <Text style={styles.otpTitle}>Enter Verification Code</Text>
+                  <Text style={styles.otpSubtitle}>
+                    We sent a 8-digit code to your email
+                  </Text>
+                  <OtpInput
+                    length={8}
+                    onComplete={handleOtpComplete}
+                    error={otpError}
+                  />
+                </View>
+
+                <View style={styles.resendContainer}>
+                  <Text style={styles.resendText}>Didn't receive the code?</Text>
+                  <TouchableOpacity onPress={handleResendCode} disabled={loading}>
+                    <Text style={styles.resendLink}>Resend</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setStep('email');
+                    setOtp('');
+                    setOtpError('');
+                  }}
+                  style={{ marginTop: 16 }}
+                >
+                  <Text
+                    style={{
+                      color: '#007a33', // wealthy-green-800
+                      fontSize: 14,
+                      fontWeight: '600',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Change Email
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }

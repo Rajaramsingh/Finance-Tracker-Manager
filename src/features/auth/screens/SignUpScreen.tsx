@@ -23,11 +23,11 @@ const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0f2d25',
+    backgroundColor: '#004d00', // wealthy-green-900
   },
   container: {
     flex: 1,
-    backgroundColor: '#0f2d25',
+    backgroundColor: '#004d00', // wealthy-green-900
   },
   scrollContent: {
     flexGrow: 1,
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: '#d1cce8',
+    color: '#b2e0d4', // wealthy-green-300
     textAlign: 'left',
     lineHeight: 22,
   },
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   emailDisplay: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: '#007a33', // wealthy-green-800
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   resendLink: {
-    color: '#3B82F6',
+    color: '#007a33', // wealthy-green-800
     fontWeight: '600',
     fontSize: 14,
     marginLeft: 4,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   loginLink: {
-    color: '#4f46e5',
+    color: '#007a33', // wealthy-green-800
     fontWeight: '700',
     fontSize: 14,
     marginLeft: 6,
@@ -249,7 +249,7 @@ export function SignUpScreen({ navigation }: any) {
   const handleGoogleSignUp = async () => {
     setLoading(true);
     let timeoutId: NodeJS.Timeout | null = null;
-    
+
     try {
       const { error } = await signInWithGoogle();
       if (error) {
@@ -258,13 +258,13 @@ export function SignUpScreen({ navigation }: any) {
         Alert.alert('Error', error.message || 'Google sign up failed');
         return;
       }
-      
+
       // Set a timeout to stop loading if auth doesn't complete within 30 seconds
       timeoutId = setTimeout(() => {
         setLoading(false);
         Alert.alert('Timeout', 'Sign-in is taking longer than expected. Please try again.');
       }, 30000);
-      
+
       // Auth state change will handle setting loading to false and navigation
       // The timeout will be cleared when component unmounts (which happens after successful auth)
     } catch (error: any) {
@@ -297,6 +297,7 @@ export function SignUpScreen({ navigation }: any) {
         </TouchableOpacity>
 
         <ScrollView
+          style={{ backgroundColor: '#004d00' }}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

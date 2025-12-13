@@ -6,6 +6,7 @@ export interface SpendingItem {
     amount: number;
     percentage: number;
     color: string;
+    icon?: string;
 }
 
 interface SpendingBreakdownItemProps {
@@ -17,9 +18,7 @@ export function SpendingBreakdownItem({ item }: SpendingBreakdownItemProps) {
         <View style={styles.itemContainer}>
             <View style={styles.itemHeader}>
                 <View style={styles.itemNameContainer}>
-                    <View
-                        style={[styles.colorIndicator, { backgroundColor: item.color }]}
-                    />
+                    {item.icon && <Text style={styles.icon}>{item.icon}</Text>}
                     <Text style={styles.itemName}>{item.name}</Text>
                 </View>
                 <Text style={styles.percentage}>
@@ -58,13 +57,18 @@ const styles = StyleSheet.create({
     itemNameContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-    } as ViewStyle,
+        flex: 1,
+    },
     colorIndicator: {
         width: 12,
         height: 12,
         borderRadius: 6,
         marginRight: 8,
-    } as ViewStyle,
+    },
+    icon: {
+        fontSize: 16,
+        marginRight: 8,
+    },
     itemName: {
         fontSize: 14,
         fontWeight: '500',
