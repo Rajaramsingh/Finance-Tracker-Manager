@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     marginTop: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
   },
   sectionTitle: {
     fontSize: 18,
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     marginTop: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 1,
   },
   emptyStateContainer: {
     flex: 1,
