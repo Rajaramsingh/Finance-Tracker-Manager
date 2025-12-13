@@ -38,7 +38,7 @@ interface ProcessedData {
   totalIncome: number;
   balance: number;
   chartData: Array<{ value: number; color: string; text: string }>;
-  breakdown: Array<{ name: string; amount: number; percentage: number; color: string }>;
+  breakdown: Array<{ name: string; amount: number; percentage: number; color: string; icon?: string }>;
 }
 
 const pieColors = [
@@ -63,7 +63,7 @@ interface CategoryMap {
   [key: string]: {
     name: string;
     amount: number;
-
+    icon?: string;
   };
 }
 
@@ -92,11 +92,13 @@ function processTransactionData(
     const category = tx.category_user || tx.category_ai;
     const categoryName = category?.name || 'Uncategorized';
     const categoryId = category?.id || 'uncategorized';
+    const categoryIcon = category?.icon || '📦';
 
     if (!categoryMap[categoryId]) {
       categoryMap[categoryId] = {
         name: categoryName,
         amount: 0,
+        icon: categoryIcon,
         // color will be assigned later based on rank
       };
     }
@@ -126,6 +128,7 @@ function processTransactionData(
     amount: category.amount,
     percentage: totalExpense > 0 ? Math.round((category.amount / totalExpense) * 100) : 0,
     color: category.color,
+    icon: category.icon,
   }));
 
   return {
@@ -318,7 +321,6 @@ export default function DashboardScreen() {
       const loadTransactions = async () => {
         if (!user?.id) return;
 
-        console.log(`Fetching transactions from ${startDate} to ${endDate}`);
         setIsLoading(true);
         try {
           const data = await fetchTransactions(user.id, startDate, endDate);
@@ -363,11 +365,13 @@ export default function DashboardScreen() {
       const category = tx.category_user || tx.category_ai;
       const categoryName = category?.name || 'Uncategorized';
       const categoryId = category?.id || 'uncategorized';
+      const categoryIcon = category?.icon || '📦';
 
       if (!categoryMap[categoryId]) {
         categoryMap[categoryId] = {
           name: categoryName,
           amount: 0,
+          icon: categoryIcon,
         };
       }
       categoryMap[categoryId].amount += Math.abs(tx.amount);
@@ -392,6 +396,7 @@ export default function DashboardScreen() {
       amount: category.amount,
       percentage: totalIncome > 0 ? Math.round((category.amount / totalIncome) * 100) : 0,
       color: category.color,
+      icon: category.icon,
     }));
 
     return {
