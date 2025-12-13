@@ -20,24 +20,35 @@ export function ExpenseOverviewChart({ chartData, totalExpense, breakdown }: Exp
 
 
       {chartData.length > 0 ? (
-        <View style={styles.chartContainer}>
-          <View style={styles.pieChartContainer}>
-            <PieChart
-              data={chartData}
-              donut
-              innerRadius={50}
-              radius={80}
-              showText={false}
-              focusOnPress
-              centerLabelComponent={() => (
-                <View style={styles.centerLabel}>
-                  <Text style={styles.centerLabelText}>Expenses</Text>
-                  {/* <Text style={styles.centerLabelAmount}>
-                    ₹{totalExpense.toLocaleString('en-IN')}
-                  </Text> */}
+        <View>
+          <View style={styles.chartRow}>
+            <View style={styles.pieChartContainer}>
+              <PieChart
+                data={chartData}
+                donut
+                innerRadius={50}
+                radius={80}
+                showText={false}
+                focusOnPress
+                centerLabelComponent={() => (
+                  <View style={styles.centerLabel}>
+                    <Text style={styles.centerLabelText}>Expenses</Text>
+                  </View>
+                )}
+              />
+            </View>
+
+            {/* Side Legend */}
+            <View style={styles.sideLegendContainer}>
+              {breakdown.map((item, index) => (
+                <View key={index} style={styles.legendItem}>
+                  <View style={[styles.legendIndicator, { backgroundColor: item.color }]} />
+                  <Text style={styles.legendText} numberOfLines={1} ellipsizeMode="tail">
+                    {item.name}
+                  </Text>
                 </View>
-              )}
-            />
+              ))}
+            </View>
           </View>
 
           {/* Legend */}
@@ -67,6 +78,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   } as ViewStyle,
 
+  chartRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  } as ViewStyle,
+
   chartContainer: {
     alignItems: 'center',
   } as ViewStyle,
@@ -74,7 +92,10 @@ const styles = StyleSheet.create({
     position: 'relative',
     height: 200,
     width: 200,
-    marginBottom: 8,
+    height: 160,
+    width: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
   centerLabel: {
     alignItems: 'center',
@@ -92,8 +113,28 @@ const styles = StyleSheet.create({
   } as TextStyle,
   legendContainer: {
     width: '100%',
-    marginTop: 24,
   } as ViewStyle,
+  sideLegendContainer: {
+    flex: 1,
+    marginLeft: 20,
+    justifyContent: 'center',
+  } as ViewStyle,
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  } as ViewStyle,
+  legendIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  } as ViewStyle,
+  legendText: {
+    fontSize: 14,
+    color: '#374151',
+    flex: 1,
+  } as TextStyle,
 
   emptyText: {
     textAlign: 'center',
