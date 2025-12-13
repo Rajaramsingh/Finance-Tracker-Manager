@@ -35,7 +35,7 @@ function HomeStackNavigator() {
   return (
     <HomeStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#004d00' },
+        headerStyle: { backgroundColor: '#007a33' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '600' },
       }}
@@ -58,7 +58,7 @@ function TransactionsStackNavigator() {
   return (
     <TransactionsStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#004d00' },
+        headerStyle: { backgroundColor: '#007a33' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '600' },
       }}

@@ -18,7 +18,7 @@ import { useAuth } from '../../../context/AuthContext';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#004d00', // wealthy-green-900
+    backgroundColor: '#007a33', // wealthy-green-900
   },
   scrollContent: {
     flexGrow: 1,
@@ -255,13 +255,13 @@ export function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#004d00' }}>
+    <View style={{ flex: 1, backgroundColor: '#007a33' }}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          style={{ backgroundColor: '#004d00' }}
+          style={{ backgroundColor: '#007a33' }}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >

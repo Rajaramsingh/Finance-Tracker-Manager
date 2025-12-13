@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   headerContainer: {
-    backgroundColor: '#004d00',
+    backgroundColor: '#007a33',
     paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
