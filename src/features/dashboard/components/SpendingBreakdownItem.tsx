@@ -21,8 +21,11 @@ export function SpendingBreakdownItem({ item }: SpendingBreakdownItemProps) {
                     {item.icon && <Text style={styles.icon}>{item.icon}</Text>}
                     <Text style={styles.itemName}>{item.name}</Text>
                 </View>
-                <Text style={styles.percentage}>
-                    {item.percentage}%
+                <Text style={[
+                    styles.percentage,
+                    item.amount < 0 ? styles.negative : styles.positive
+                ]}>
+                    {item.amount < 0 ? '-' : '+'}₹{Math.abs(item.amount).toLocaleString('en-IN')}
                 </Text>
             </View>
             <View style={styles.progressBarContainer}>
@@ -38,7 +41,7 @@ export function SpendingBreakdownItem({ item }: SpendingBreakdownItemProps) {
             </View>
             <View style={styles.amountContainer}>
                 <Text style={styles.amount}>
-                    ₹{item.amount.toLocaleString('en-IN')}
+                    {item.percentage}%
                 </Text>
             </View>
         </View>
@@ -96,6 +99,12 @@ const styles = StyleSheet.create({
     } as ViewStyle,
     amount: {
         fontSize: 12,
-        color: '#6B7280', // gray-500
+        color: '#000', // gray-500
+    } as TextStyle,
+    negative: {
+        color: '#ef4444', // red-500
+    } as TextStyle,
+    positive: {
+        color: '#22c55e', // green-500
     } as TextStyle,
 });

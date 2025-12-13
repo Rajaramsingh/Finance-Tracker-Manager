@@ -125,7 +125,7 @@ function processTransactionData(
   // Prepare breakdown data
   const breakdown = sortedCategories.map((category) => ({
     name: category.name,
-    amount: category.amount,
+    amount: -category.amount, // Negate to show as expense
     percentage: totalExpense > 0 ? Math.round((category.amount / totalExpense) * 100) : 0,
     color: category.color,
     icon: category.icon,
@@ -448,7 +448,7 @@ export default function DashboardScreen() {
   // Get the categories by amount
   const topCategories = useMemo(() => {
     return [...processed.breakdown]
-      .sort((a, b) => b.amount - a.amount)
+      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
   }, [processed.breakdown]);
 
   // Format period label for display
